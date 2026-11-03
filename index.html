@@ -1,0 +1,605 @@
+
+index.html
+100%
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Robo Pizza — Cidade Expandida</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;900&display=swap');
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;font-family:Nunito,system-ui,sans-serif;background:#e9e0c9;color:#27372e}
+canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none}
+.brand{position:absolute;top:20px;left:22px;background:#f8f0dcdf;border:2px solid #d5c6a5;border-radius:18px;padding:12px 18px;box-shadow:0 5px 0 #b7a88955}
+.brand strong{display:block;font-size:20px;letter-spacing:.4px}
+.brand span{font-size:12px;color:#6e7b5e}
+.panel{position:absolute;top:20px;right:20px;width:245px;background:#f8f0dcef;border:2px solid #d5c6a5;border-radius:18px;padding:14px 16px;box-shadow:0 5px 0 #b7a88955}
+.panel h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:1.4px;color:#6b795d}
+.stat{display:flex;justify-content:space-between;margin:7px 0;font-weight:900}
+.stat b{color:#d66b3d}
+.task{margin-top:10px;padding:10px;border-radius:12px;background:#e5e8d0;font-size:13px;line-height:1.4}
+.task strong{display:block;color:#476647}
+.bottom{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center}
+.hint,.mission{background:#f8f0dce8;border:2px solid #d5c6a5;border-radius:14px;padding:10px 15px;font-size:12px;box-shadow:0 4px 0 #b7a88955}
+.mission{font-weight:900;color:#476647}
+.key{display:inline-block;background:#fff8e8;border:1px solid #b7a889;border-radius:5px;padding:2px 6px;margin:0 2px;font-weight:900}
+.toast{position:absolute;top:105px;left:50%;transform:translateX(-50%);background:#3d5945;color:#fff5d9;padding:12px 20px;border-radius:14px;font-weight:900;opacity:0;transition:opacity .25s;z-index:100}
+.toast.show{opacity:1}
+.phoneToggle{position:absolute;left:22px;top:112px;pointer-events:auto;border:2px solid #d5c6a5;border-radius:14px;background:#f8f0dc;color:#27372e;padding:10px 13px;font:900 13px Nunito;cursor:pointer;box-shadow:0 4px 0 #b7a88955}
+.phonePanel{display:none;position:absolute;left:22px;top:90px;width:260px;height:490px;max-height:78vh;overflow:hidden;pointer-events:auto;background:linear-gradient(135deg,#fdfdfd,#d8d8d8);border:7px solid #c8cbd0;border-radius:36px;padding:9px;box-shadow:inset 0 0 0 2px #fff,0 10px 22px #14251e77}
+.phonePanel.open{display:block}
+.phonePanel:before{content:"";display:block;width:58px;height:6px;border-radius:8px;background:#555;margin:1px auto 8px}
+.phoneStatus{height:22px;margin:0 -2px 10px;padding:2px 8px;background:#244d4c;color:#fff;font-size:10px;font-weight:900;display:flex;justify-content:space-between}
+.phoneScreen{height:calc(100% - 55px);border-radius:6px;background:linear-gradient(150deg,#68d3e8,#b6edf0 60%,#70d5e6);padding:10px 7px;overflow:auto}
+.phoneTime{font-weight:900;font-size:12px}
+.phoneApps{display:grid;grid-template-columns:repeat(3,1fr);gap:9px 8px}
+.phoneApp{height:61px;border:2px solid #dce8e8!important;border-radius:13px!important;background:linear-gradient(#fff,#d8e5e5)!important;color:#263b3d!important;box-shadow:0 3px 0 #35535a55,inset 0 2px 2px #fff;font:900 10px Nunito!important;padding:3px!important;margin:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer}
+.phoneApp .appIcon{font-size:25px;line-height:1.1}
+.phoneDock{display:flex;justify-content:space-around;margin-top:13px;padding:7px 2px;background:#ffffff88;border-radius:13px}
+.phoneDock button{border:0;border-radius:9px;background:linear-gradient(#fff,#8ad2df);font-size:21px;padding:5px 8px;cursor:pointer}
+.phoneHome{display:block;margin:8px auto 0;border:0!important;background:#eee!important;color:#777!important;font-size:17px!important;padding:3px 18px!important;cursor:pointer}
+.phoneDetails{display:none;background:#f5ffffeF;border-radius:10px;padding:8px;margin-top:9px;color:#23474b;font-size:11px}
+.phoneDetails.show{display:block}
+.phoneDetails ol{padding-left:18px;margin:5px 0}
+.phoneDetails li{font-size:11px;margin:4px 0}
+.galleryOverlay{display:none;position:fixed;inset:0;z-index:8;background:#17231dcc;pointer-events:auto;align-items:center;justify-content:center;padding:20px}
+.galleryOverlay.open{display:flex}
+.galleryBox{width:min(900px,96vw);max-height:88vh;overflow:auto;background:#f8f0dc;border:3px solid #d5c6a5;border-radius:22px;padding:18px;box-shadow:0 10px 0 #101a1688}
+.galleryHead{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.galleryHead h2{margin:0;color:#d66b3d}
+.galleryHead button,.galleryBox button{border:0;border-radius:10px;background:#476647;color:#fff8e8;font:900 13px Nunito;padding:9px 12px;cursor:pointer}
+.photoGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:14px}
+.photoCard{background:#e5e8d0;border-radius:12px;padding:8px}
+.photoCard img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px}
+.photoCard p{margin:6px 2px 2px;font-size:12px;font-weight:900}
+.emptyGallery{padding:25px;text-align:center;color:#68745d}
+.cameraBadge{position:absolute;right:20px;bottom:20px;pointer-events:auto;border:2px solid #d5c6a5;border-radius:12px;background:#f8f0dc;color:#27372e;font:900 12px Nunito;padding:9px 12px;cursor:pointer}
+@media(max-width:650px){.phoneToggle{top:70px;left:10px}.phonePanel{left:10px;top:120px;width:230px}.cameraBadge{right:10px;bottom:10px}}
+#start{position:fixed;inset:0;background:#27372e88;display:grid;place-items:center;z-index:100}
+.modal{max-width:440px;margin:20px;text-align:center;background:#f8f0dc;border:3px solid #d5c6a5;border-radius:26px;padding:30px;box-shadow:0 12px 0 #26382b55}
+.modal .emoji{font-size:48px}
+.modal h1{margin:8px 0;color:#d66b3d;font-size:32px}
+.modal p{line-height:1.6;color:#53644e}
+.modal button{border:0;border-radius:13px;background:#d66b3d;color:#fff8e8;font:900 16px Nunito;padding:13px 25px;cursor:pointer;box-shadow:0 5px 0 #a64f2c}
+.modal button:active{transform:translateY(3px);box-shadow:0 2px 0 #a64f2c}
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div class="brand"><strong>🍕 ROBO PIZZA</strong><span>Vila com Vias Naturais</span></div>
+  <div class="panel">
+    <h3>Seu turno</h3>
+    <div class="stat"><span>Missão <b id="missionNumber">1</b></span><b id="deliveries">0 / 5</b></div>
+    <div class="stat"><span>Contrato</span><b id="missionValue">R$ 200</b></div>
+    <div class="stat"><span>Carteira</span><b id="coins">R$ 0</b></div>
+    <div class="task"><strong id="taskTitle">Missão 1: Pizzas quentinhas!</strong><span id="taskText">Aproxime-se da pizzaria para pegar a pizza.</span></div>
+  </div>
+  <div id="toast" class="toast">Pizza entregue!</div>
+  <div class="bottom">
+    <div class="mission" id="status">🍕 Busque uma pizza!</div>
+    <div class="hint"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> mover · mouse para olhar · Aproxime-se das casas para entregar!</div>
+  </div>
+  <button class="phoneToggle" id="phoneToggle">📱 Celular</button>
+  
+  <div class="phonePanel" id="phonePanel">
+    <div class="phoneStatus"><span>▮▮ 4G ◉</span><span id="gameTime" class="phoneTime">8:18 AM</span><span>100% ▰</span></div>
+    <div class="phoneScreen">
+      <div class="phoneApps">
+        <button class="phoneApp" id="missionsApp"><span class="appIcon">🍕</span>Missões</button>
+        <button class="phoneApp" id="walletApp"><span class="appIcon">👛</span>Carteira</button>
+        <button class="phoneApp" id="photoBtn"><span class="appIcon">📸</span>Câmera</button>
+        <button class="phoneApp" id="galleryBtn"><span class="appIcon">🖼️</span>Álbum</button>
+        <button class="phoneApp" id="clockBtn"><span class="appIcon">🕒</span>Horário</button>
+        <button class="phoneApp" id="cameraApp"><span class="appIcon">👁️</span>Visão</button>
+        <button class="phoneApp" id="helpApp"><span class="appIcon">❔</span>Ajuda</button>
+        <button class="phoneApp" id="statusApp"><span class="appIcon">⭐</span>Progresso</button>
+        <button class="phoneApp" id="pizzaApp"><span class="appIcon">🍔</span>Pizzaria</button>
+        <button class="phoneApp" id="closePhoneApp"><span class="appIcon">⏻</span>Sair</button>
+      </div>
+      <div class="phoneDetails" id="phoneDetails">
+        <b id="phoneDetailTitle">Título</b>
+        <ol id="missionList"></ol>
+        <div id="phoneDetailText"></div>
+      </div>
+      <div class="phoneDock">
+        <button id="dockMissions" title="Missões">📋</button>
+        <button id="dockWallet" title="Carteira">👛</button>
+        <button id="dockCamera" title="Câmera">📷</button>
+        <button id="dockGallery" title="Álbum">🌄</button>
+        <button id="dockClose" title="Fechar celular">📞</button>
+      </div>
+      <button class="phoneHome" id="phoneHome" title="Tela inicial">●</button>
+    </div>
+  </div>
+  <button class="cameraBadge" id="cameraToggle">👁️ Primeira pessoa (V)</button>
+</div>
+
+<div class="galleryOverlay" id="galleryOverlay">
+  <div class="galleryBox">
+    <div class="galleryHead"><h2>🖼️ Álbum do Robo</h2><button id="closeGallery">Fechar ✕</button></div>
+    <p style="margin:8px 0;color:#68745d;font-size:13px">As fotos tiradas ficam salvas na galeria durante o jogo.</p>
+    <div class="photoGrid" id="photoGrid"></div>
+  </div>
+</div>
+
+<div id="start">
+  <div class="modal">
+    <div class="emoji">🤖🍕🏙️</div>
+    <h1>Robo Pizza</h1>
+    <p>Explore a cidade com ruas e casas direcionadas em vários ângulos! Cumpra missões de <b>5 entregas</b> para acumular dinheiro.</p>
+    <p><b>WASD</b> para andar · <b>mouse</b> para olhar · <b>V</b> alterna a câmera</p>
+    <button id="play">COMEÇAR A ENTREGA</button>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+/* CENA E CÂMERA */
+const scene=new THREE.Scene(); scene.background=new THREE.Color('#f3ead5'); scene.fog=new THREE.Fog('#f3ead5',60,280);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,350); camera.position.set(0,7,12);
+const renderer=new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true}); renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.12; document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight('#fff4d9','#66735b',2)); const sun=new THREE.DirectionalLight('#fff1d3',3); sun.position.set(-20,35,15); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-60;sun.shadow.camera.right=60;sun.shadow.camera.top=60;sun.shadow.camera.bottom=-60;scene.add(sun);
+
+const mat=(c,r=.8)=>new THREE.MeshStandardMaterial({color:c,roughness:r}); 
+const robotYellow=mat('#f2aa38', .6), metalGray=mat('#a5acaf', .5), darkEyeMat=mat('#1a1a1a', .3), lightMetal=mat('#d1d7d9', .4), goldJoint=mat('#e39a2b', .5);
+const cream=mat('#f1dfb8'), wood=mat('#5c7180'), trunk=mat('#a77b62'), windowMat=mat('#fff1b0', .2);
+
+function mesh(g,m,x,y,z,parent=scene){const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+function box(w,h,d,m,x,y,z,p=scene){return mesh(new THREE.BoxGeometry(w,h,d),m,x,y,z,p)}
+function cyl(rt,rb,h,m,x,y,z,seg=12,p=scene){return mesh(new THREE.CylinderGeometry(rt,rb,h,seg),m,x,y,z,p)}
+
+/* CHÃO DA CIDADE */
+const ground=mesh(new THREE.CircleGeometry(110,90),mat('#9eaa83'),0,-.28,0);ground.rotation.x=-Math.PI/2;
+for(let i=0;i<60;i++){let a=i/60*Math.PI*2;let r=12+(i%6)*8;let x=Math.cos(a)*r,z=Math.sin(a)*r;let patch=mesh(new THREE.CircleGeometry(3.5+(i%3)*.8,12),mat(i%2?'#a7b18c':'#98a783'),x,-.25,z);patch.rotation.x=-Math.PI/2;}
+
+function tree(x,z,s=1){cyl(.17*s,.25*s,1.8*s,trunk,x,.6*s,z,6);for(let i=0;i<4;i++){let h=1.55*s-i*.22*s;let cone=mesh(new THREE.ConeGeometry((1.05-i*.17)*s,h,7),mat(['#82966f','#718863','#91a27c','#778d69'][i]),x,(1.1+i*.52)*s,z);cone.position.y+=.05;} }
+for(let i=0;i<140;i++){let a=i*2.399;let r=30+(i%15)*3.2;let x=Math.cos(a)*r,z=Math.sin(a)*r;tree(x,z,.7+(i%4)*.22)}
+
+/* PRÉDIOS E COLISÃO */
+const solidBuildings = [];
+
+function building(x, z, width, height, depth, colorHex, rot=0){
+  const g = new THREE.Group(); scene.add(g); g.position.set(x, 0, z); g.rotation.y = rot;
+  const bMat = mat(colorHex);
+  box(width, height, depth, bMat, 0, height/2, 0, g);
+  box(width+.2, .3, depth+.2, mat('#3d494a'), 0, height, 0, g);
+  
+  const rows = Math.floor(height / 1.8);
+  const cols = Math.floor(width / 1.4);
+  for(let r = 1; r < rows; r++){
+    for(let c = 0; c < cols; c++){
+      const wx = -width/2 + 0.8 + c * 1.4;
+      const wy = r * 1.8;
+      box(.6, .8, .05, windowMat, wx, wy, depth/2 + .03, g);
+      box(.6, .8, .05, windowMat, wx, wy, -depth/2 - .03, g);
+    }
+  }
+  solidBuildings.push({x, z, scale: Math.max(width, depth)/2});
+  return g;
+}
+
+building(-22, -18, 5, 12, 5, '#5c7380', 0.2);
+building(-28, -12, 6, 16, 6, '#80685c', -0.4);
+building(25, -20, 6, 14, 5, '#627c6a', 0.8);
+building(30, -10, 5, 10, 5, '#7c6278', -0.5);
+building(-26, 20, 6, 15, 6, '#5c6980', 0.3);
+building(28, 22, 7, 18, 6, '#80775c', -0.7);
+building(0, -32, 8, 20, 6, '#4d6163', 0.1);
+building(-35, 0, 6, 11, 5, '#6e5d52', 1.2);
+
+/* CASAS COM ROTAÇÃO E DIREÇÕES VARIADAS */
+function house(x, z, scale=1, rot=0, main=false){
+  const g=new THREE.Group(); scene.add(g); g.position.set(x,0,z); g.rotation.y = rot; g.scale.setScalar(scale);
+  const style = main ? 0 : Math.abs(Math.floor(x*3+z*7))%5;
+  const wallPalette=['#718b99','#c58b5d','#b7a078','#9baf8a','#bd8d91'];
+  const sidePalette=['#526f7a','#956d55','#89704e','#667b5b','#8c6268'];
+  const roofPalette=['#344e60','#526a58','#6b5368','#80614b','#3d6264'];
+  const wallMat = mat(wallPalette[style]); const sideMat = mat(sidePalette[style]);
+  const bodyW=[3.1,2.8,3.35,2.95,3.2][style], bodyD=[2.7,3.0,2.55,2.85,2.65][style];
+  box(bodyW,2.35,bodyD,wallMat,0,1.2,0,g);
+  box(bodyW+.04,.16,bodyD+.04,sideMat,0,.16,0,g);
+
+  const makeGable = (zFace, material) => {
+    const shape = new THREE.Shape(); shape.moveTo(-bodyW/2,0); shape.lineTo(bodyW/2,0); shape.lineTo(0,style===2?1.42:style===3?.88:1.12); shape.closePath();
+    const panel = mesh(new THREE.ShapeGeometry(shape),material,0,2.25,zFace,g); if(zFace < 0) panel.rotation.y = Math.PI;
+  };
+  makeGable(bodyD/2+.005,wallMat); makeGable(-bodyD/2-.005,sideMat);
+
+  const roofMat = mat(roofPalette[style]), roofTrim = mat('#283f49');
+  const roofLength=style===1?2.28:2.12, roofY=style===2?2.94:2.88, roofAngle=style===2?.68:style===3?.43:.55;
+  const leftRoof=box(roofLength,.16,bodyD+.48,roofMat,-.82,roofY,0,g); leftRoof.rotation.z=roofAngle;
+  const rightRoof=box(roofLength,.16,bodyD+.48,roofMat,.82,roofY,0,g); rightRoof.rotation.z=-roofAngle;
+  box(.13,.13,bodyD+.55,roofTrim,0,style===2?3.53:3.44,0,g);
+
+  const doorFrame=mat('#344b50');
+  box(.78,1.28,.12,doorFrame,.48,.78,bodyD/2+.055,g); box(.62,1.12,.06,mat(style===0?'#47616b':style===2?'#6f503d':'#785744'),.48,.77,bodyD/2+.13,g);
+  mesh(new THREE.SphereGeometry(.045,8,6),mat('#e7c16f'),.70,.78,bodyD/2+.18,g);
+
+  box(3.45,.16,1.12,roofTrim,0,.15,2.02,g); box(3.25,.08,1.02,wood,0,.25,2.02,g);
+  solidBuildings.push({x, z, scale});
+  return g;
+}
+
+// Lista de casas com posições e rotações variadas (viradas para caminhos diferentes)
+const allHouses=[
+  {name:'Chalé Azul', x:-4, z:-7, scale:1.05, rot:0.4},
+  {name:'Casa da Colina', x:12, z:-5, scale:.78, rot:-1.1},
+  {name:'Casa do Bosque', x:-14, z:4, scale:.72, rot:1.8},
+  {name:'Casa da Trilha', x:12, z:12, scale:.75, rot:-0.6},
+  {name:'Chalé do Norte', x:-18, z:-18, scale:.7, rot:2.5},
+  {name:'Casa do Pinheiro', x:18, z:-16, scale:.72, rot:-2.1},
+  {name:'Casa do Lago', x:22, z:4, scale:.7, rot:0.9},
+  {name:'Chalé Verde', x:-22, z:14, scale:.75, rot:-1.4},
+  {name:'Casa Pequena', x:-4, z:-24, scale:.68, rot:3.1},
+  {name:'Casa da Floresta', x:18, z:22, scale:.7, rot:-0.8},
+  {name:'Chalé Escondido', x:4, z:-22, scale:.65, rot:1.5},
+  {name:'Casa da Pedra', x:-25, z:-4, scale:.68, rot:-2.7}
+];
+
+allHouses.forEach(h => house(h.x, h.z, h.scale, h.rot, h.name === 'Chalé Azul'));
+
+/* PIZZARIAS */
+const shop=house(1, 7, .8, 0, false);
+box(1.55,.42,.12,mat('#f4d7a0'),1,1.9,8.08); box(1.18,.08,.04,mat('#d66b3d'),1,1.9,8.16);
+const shop2=house(32, 24, .85, -1.2, false);
+box(1.65,.42,.12,mat('#f4d7a0'),32,1.9,25.05); box(1.25,.08,.04,mat('#d66b3d'),32,1.9,25.13);
+
+const shops=[{x:1, z:8.4}, {x:32, z:25.4}];
+
+/* CÁLCULO DE ENTRADA FRONTAL DA CASA */
+function getHouseFront(h){
+  const dist = 2.65 * h.scale;
+  return {
+    x: h.x + Math.sin(h.rot) * dist,
+    z: h.z + Math.cos(h.rot) * dist
+  };
+}
+
+/* ESTRADAS ORGÂNICAS E NATURAIS COM PEDRAS ORGANIZADAS */
+function buildNaturalPath(p1, p2){
+  const dx = p2.x - p1.x, dz = p2.z - p1.z;
+  const dist = Math.hypot(dx, dz);
+  const steps = Math.max(8, Math.ceil(dist / 0.5));
+  
+  for(let i = 0; i <= steps; i++){
+    const t = i / steps;
+    // Adiciona leve curvatura natural no caminho
+    const curve = Math.sin(t * Math.PI) * 0.4;
+    const nx = -dz / dist, nz = dx / dist;
+    
+    const x = p1.x + dx * t + nx * curve;
+    const z = p1.z + dz * t + nz * curve;
+    
+    const angle = Math.atan2(dx, dz) + (Math.sin(i)*0.08);
+    const tile = box(.95, .03, .38, cream, x, .005, z);
+    tile.rotation.y = angle;
+  }
+}
+
+// Conectar as casas entre si de forma circular e interligada
+for(let i = 0; i < allHouses.length; i++){
+  const f1 = getHouseFront(allHouses[i]);
+  // Conecta à próxima casa vizinha
+  const f2 = getHouseFront(allHouses[(i + 1) % allHouses.length]);
+  buildNaturalPath(f1, f2);
+  
+  // Conecta à pizzaria mais próxima
+  const shopNear = Math.hypot(f1.x - 1, f1.z - 8.4) < Math.hypot(f1.x - 32, f1.z - 25.4) ? {x:1, z:8.4} : {x:32, z:25.4};
+  if(i % 2 === 0) buildNaturalPath(f1, shopNear);
+}
+
+/* LÓGICA DE MISSÕES */
+let currentMission = 1;
+let currentMissionTargets = [];
+let targetIndexInMission = 0;
+let deliveriesInMission = 0;
+let totalCoins = 0;
+let currentMissionValue = 0;
+let perDeliveryValue = 0;
+
+function setupMission() {
+  const shuffled = [...allHouses].sort(() => Math.random() - 0.5);
+  currentMissionTargets = shuffled.slice(0, 5);
+  targetIndexInMission = 0;
+  deliveriesInMission = 0;
+  
+  currentMissionValue = (Math.floor(Math.random() * 21) + 15) * 10;
+  perDeliveryValue = Math.floor((currentMissionValue * 0.15) / 5) * 5; 
+
+  updateMissionUI();
+}
+
+/* MODELO DO ROBÔ */
+const robot = new THREE.Group(); scene.add(robot); robot.position.set(0, 0, 4.8); robot.scale.setScalar(0.28);
+const bodyGroup = new THREE.Group(); robot.add(bodyGroup);
+
+const torso = cyl(.85, 1.05, 1.3, robotYellow, 0, 1.8, 0, 14, bodyGroup);
+const torsoBand = cyl(1.08, 1.08, .1, metalGray, 0, 1.25, 0, 14, bodyGroup);
+const neck = cyl(.32, .32, .35, goldJoint, 0, 2.55, 0, 10, bodyGroup);
+
+const headGroup = new THREE.Group(); bodyGroup.add(headGroup); headGroup.position.set(0, 2.8, 0);
+const headBase = cyl(1.35, 1.25, 1.1, robotYellow, 0, .55, 0, 14, headGroup);
+const headDome = mesh(new THREE.SphereGeometry(1.35, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2.3), robotYellow, 0, 1.0, 0, headGroup);
+
+const headBand1 = cyl(1.38, 1.38, .12, metalGray, 0, .25, 0, 14, headGroup);
+const headBand2 = cyl(1.38, 1.38, .12, metalGray, 0, .85, 0, 14, headGroup);
+
+for(let i=0; i<8; i++){
+  let a = (i/8) * Math.PI * 2;
+  mesh(new THREE.SphereGeometry(.05, 6, 6), lightMetal, Math.cos(a)*1.39, .25, Math.sin(a)*1.39, headGroup);
+  mesh(new THREE.SphereGeometry(.05, 6, 6), lightMetal, Math.cos(a)*1.39, .85, Math.sin(a)*1.39, headGroup);
+}
+
+for(let side of [-1, 1]){
+  const eye = mesh(new THREE.SphereGeometry(.58, 12, 10), darkEyeMat, side * .68, .55, .98, headGroup);
+  eye.scale.set(1, 1, .6);
+  const eyeRim = cyl(.62, .62, .12, metalGray, side * .68, .55, .82, 12, headGroup);
+  eyeRim.rotation.x = Math.PI / 2;
+  
+  const brow = box(.65, .15, .15, darkEyeMat, side * .62, 1.18, 1.05, headGroup);
+  brow.rotation.z = -side * .12;
+}
+
+const leftArm = new THREE.Group(), rightArm = new THREE.Group();
+bodyGroup.add(leftArm); bodyGroup.add(rightArm);
+leftArm.position.set(-1.0, 2.2, 0); rightArm.position.set(1.0, 2.2, 0);
+
+function createArm(armGroup, side){
+  mesh(new THREE.SphereGeometry(.28, 8, 8), goldJoint, 0, 0, 0, armGroup);
+  cyl(.14, .14, .7, robotYellow, side * .2, -.35, 0, 8, armGroup).rotation.z = -side * .4;
+  mesh(new THREE.SphereGeometry(.22, 8, 8), goldJoint, side * .4, -.7, 0, armGroup);
+  cyl(.14, .14, .7, robotYellow, side * .6, -1.05, .1, 8, armGroup).rotation.z = -side * .2;
+  
+  const handBase = cyl(.45, .32, .55, robotYellow, side * .8, -1.5, .2, 10, armGroup);
+  handBase.rotation.z = -side * .25;
+  cyl(.48, .48, .12, metalGray, side * .8, -1.25, .2, 10, armGroup).rotation.z = -side * .25;
+  
+  for(let f = -1; f <= 1; f++){
+    box(.12, .3, .12, lightMetal, side * .8 + f * .12, -1.88, .25 + Math.abs(f)*.05, armGroup);
+  }
+}
+createArm(leftArm, -1); createArm(rightArm, 1);
+
+const leftLeg = new THREE.Group(), rightLeg = new THREE.Group();
+bodyGroup.add(leftLeg); bodyGroup.add(rightLeg);
+leftLeg.position.set(-.45, 1.1, 0); rightLeg.position.set(.45, 1.1, 0);
+
+function createLeg(legGroup){
+  mesh(new THREE.SphereGeometry(.24, 8, 8), goldJoint, 0, 0, 0, legGroup);
+  cyl(.13, .13, .65, robotYellow, 0, -.35, 0, 8, legGroup);
+  mesh(new THREE.SphereGeometry(.2, 8, 8), goldJoint, 0, -.7, 0, legGroup);
+  cyl(.13, .13, .65, robotYellow, 0, -1.05, 0, 8, legGroup);
+  
+  const foot = box(.48, .28, .75, lightMetal, 0, -1.45, .15, legGroup);
+  foot.rotation.x = .1;
+}
+createLeg(leftLeg); createLeg(rightLeg);
+
+box(1.1, 1.0, .45, mat('#c77b35'), 0, 1.75, -.92, bodyGroup);
+
+/* PIZZA FLUTUANTE */
+const pizzaGroup=new THREE.Group(); scene.add(pizzaGroup); pizzaGroup.position.set(1,0,8.4);
+cyl(.48,.48,.12,mat('#c97a35'),0,.65,0,8,pizzaGroup); cyl(.42,.42,.05,mat('#f4cc70'),0,.74,0,8,pizzaGroup);
+
+/* MARCADOR DE CASA-ALVO */
+const marker=new THREE.Group(); scene.add(marker);
+cyl(.06,.06,1.4,mat('#f3c75c'),0,1,0,6,marker); mesh(new THREE.ConeGeometry(.28,.5,6),mat('#f3c75c'),0,1.9,0,marker);
+
+/* PARTÍCULAS */
+const particlesGroup = new THREE.Group(); scene.add(particlesGroup);
+const particles = [];
+
+function createDeliveryEffect(x, y, z) {
+  for (let i = 0; i < 20; i++) {
+    const p = mesh(
+      new THREE.SphereGeometry(0.08 + Math.random()*0.05, 6, 6),
+      mat(['#ffd447', '#ff4444', '#44ff77', '#ffffff'][Math.floor(Math.random()*4)], 0.2),
+      x, y, z, particlesGroup
+    );
+    particles.push({ mesh: p, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 4 + 2, vz: (Math.random() - 0.5) * 4, life: 1.0 });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i]; p.life -= dt * 1.5;
+    p.mesh.position.x += p.vx * dt; p.mesh.position.y += p.vy * dt; p.mesh.position.z += p.vz * dt;
+    p.vy -= 9.8 * dt; p.mesh.scale.setScalar(Math.max(0, p.life));
+    if (p.life <= 0) { particlesGroup.remove(p.mesh); particles.splice(i, 1); }
+  }
+}
+
+/* CONTROLES */
+const keys={}; addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true); addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let yaw=0, drag=false, lastX=0, lastY=0, pitch=.32;
+renderer.domElement.addEventListener('pointerdown',e=>{drag=true;lastX=e.clientX;lastY=e.clientY});
+renderer.domElement.addEventListener('pointerup',()=>drag=false);
+renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return; yaw-=(e.clientX-lastX)*.006; pitch=Math.max(.12,Math.min(.72,pitch+(e.clientY-lastY)*.003)); lastX=e.clientX; lastY=e.clientY});
+
+let hasPizza=false, toastTimer; const $=id=>document.getElementById(id);
+function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),2200)}
+
+function updateMissionUI(){
+  const target = currentMissionTargets[targetIndexInMission];
+  
+  $('deliveries').textContent=deliveriesInMission+' / 5';
+  $('missionValue').textContent='R$ '+currentMissionValue;
+  $('coins').textContent='R$ '+totalCoins;
+  $('missionNumber').textContent=currentMission;
+  
+  if(target){
+    const front = getHouseFront(target);
+    $('taskTitle').textContent='Missão '+currentMission+' (Contrato: R$ '+currentMissionValue+')';
+    $('taskText').textContent=hasPizza?'Chegue perto de '+target.name+' para entregar.':'Chegue perto da pizzaria para pegar a pizza.';
+    marker.position.set(front.x, 0, front.z);
+    marker.visible = true;
+  }
+}
+
+function collidesWithBuilding(x,z){
+  return solidBuildings.some(b=>Math.abs(x-b.x)<(1.8*b.scale+.2) && Math.abs(z-b.z)<(1.8*b.scale+.2));
+}
+
+/* ENTREGA AUTOMÁTICA */
+function checkProximity(){
+  const p = robot.position;
+
+  if(!hasPizza && shops.some(s => Math.hypot(p.x - s.x, p.z - s.z) < 2.8)){
+    hasPizza = true; 
+    pizzaGroup.visible = false;
+    $('status').textContent = '🏡 Vá até ' + currentMissionTargets[targetIndexInMission].name + '!';
+    updateMissionUI(); 
+    toast('Pizza pega na pizzaria! 🍕'); 
+    return;
+  }
+
+  const target = currentMissionTargets[targetIndexInMission];
+  if(target){
+    const front = getHouseFront(target);
+    if(hasPizza && Math.hypot(p.x - front.x, p.z - front.z) < 3.2){
+      hasPizza = false; 
+      deliveriesInMission++; 
+      totalCoins += perDeliveryValue; 
+      targetIndexInMission++; 
+      pizzaGroup.visible = true;
+      
+      createDeliveryEffect(front.x, 1.2, front.z);
+
+      if(deliveriesInMission >= 5){
+        const remainingBonus = currentMissionValue - (perDeliveryValue * 4);
+        totalCoins += (remainingBonus - perDeliveryValue);
+        toast('🎉 Contrato da Missão ' + currentMission + ' Concluído! +R$ ' + remainingBonus);
+        currentMission++; 
+        setupMission();
+        $('status').textContent = '🏆 Nova missão! Busque uma pizza!';
+      } else {
+        $('status').textContent = '🍕 Volte à pizzaria para pegar a próxima pizza!';
+        toast('Entrega em ' + target.name + '! +R$ ' + perDeliveryValue);
+        updateMissionUI();
+      }
+    }
+  }
+}
+
+setupMission();
+
+let firstPerson=false;
+$('cameraToggle').onclick=()=>{firstPerson=!firstPerson; $('cameraToggle').textContent=firstPerson?'🎥 Terceira pessoa (V)':'👁️ Primeira pessoa (V)';};
+$('phoneToggle').onclick=()=>$('phonePanel').classList.toggle('open');
+
+/* APLICATIVOS DO CELULAR */
+function openApp(title, content, showList = false){
+  const details = $('phoneDetails');
+  const list = $('missionList');
+  const text = $('phoneDetailText');
+  
+  details.classList.add('show');
+  $('phoneDetailTitle').textContent = title;
+  
+  if(showList){
+    list.style.display = 'block';
+    list.innerHTML = '';
+    currentMissionTargets.forEach((t, i) => {
+      const li = document.createElement('li');
+      li.textContent = (i < deliveriesInMission ? '✅ ' : i === targetIndexInMission ? '📍 ' : '⬜ ') + t.name;
+      list.appendChild(li);
+    });
+  } else {
+    list.style.display = 'none';
+    list.innerHTML = '';
+  }
+  
+  text.innerText = content;
+}
+
+$('missionsApp').onclick = () => openApp('🍕 Missões da Rodada', 'Contrato da Missão '+currentMission+': R$ '+currentMissionValue+'\nEntregas: '+deliveriesInMission+' / 5', true);
+$('dockMissions').onclick = () => $('missionsApp').click();
+
+$('walletApp').onclick = () => openApp('👛 Carteira do Robô', '💰 Saldo em Conta:\nR$ '+totalCoins+'\n\n📄 Contrato Atual: R$ '+currentMissionValue+'\n📦 Entregas Realizadas: '+deliveriesInMission+'/5\n💵 Ganho por Pizza: R$ '+perDeliveryValue, false);
+$('dockWallet').onclick = () => $('walletApp').click();
+
+$('clockBtn').onclick = () => openApp('🕒 Horário da Vila', 'Agora são ' + $('gameTime').textContent, false);
+$('cameraApp').onclick = () => { $('cameraToggle').click(); };
+$('helpApp').onclick = () => openApp('❔ Como Jogar', '• WASD para mover\n• Aproxime-se das casas para entregar automaticamente\n• Faça 5 entregas para completar cada missão!', false);
+$('statusApp').onclick = () => openApp('⭐ Seu Progresso', 'Missão atual: '+currentMission+'\nSaldo Acumulado: R$ '+totalCoins, false);
+$('pizzaApp').onclick = () => openApp('🍔 Pizzaria', 'As pizzarias produzem pizzas quentinhas para você coletar e entregar.', false);
+
+$('closePhoneApp').onclick = () => $('phonePanel').classList.remove('open');
+$('dockClose').onclick = () => $('phonePanel').classList.remove('open');
+$('phoneHome').onclick = () => $('phoneDetails').classList.remove('show');
+
+const gamePhotos=[];
+function renderGallery(){const grid=$('photoGrid');grid.replaceChildren();if(!gamePhotos.length){const empty=document.createElement('div');empty.className='emptyGallery';empty.textContent='Nenhuma foto tirada ainda.';grid.appendChild(empty);return;}gamePhotos.forEach((photo,i)=>{const card=document.createElement('div');card.className='photoCard';const img=document.createElement('img');img.src=photo.src;const label=document.createElement('p');label.textContent='Foto '+(i+1)+' · '+photo.time;card.append(img,label);grid.appendChild(card);});}
+$('photoBtn').onclick=()=>{try{renderer.render(scene,camera);const src=renderer.domElement.toDataURL('image/png');gamePhotos.push({src,time:$('gameTime').textContent});toast('📸 Foto adicionada ao álbum!');renderGallery();}catch(e){}};
+$('galleryBtn').onclick=()=>{renderGallery();$('galleryOverlay').classList.add('open');};
+$('dockGallery').onclick=()=>{ $('galleryBtn').click(); };
+$('dockCamera').onclick=()=>{ $('photoBtn').click(); };
+$('closeGallery').onclick=()=>$('galleryOverlay').classList.remove('open');
+$('play').onclick=()=>{$('start').style.display='none';};
+
+addEventListener('keydown',e=>{if(e.key.toLowerCase()==='v')$('cameraToggle').click();});
+
+/* LOOP DE ANIMAÇÃO */
+const clock=new THREE.Clock(); let walkTime=0;
+function animate(){
+  requestAnimationFrame(animate);
+  let dt=Math.min(clock.getDelta(),.04);
+  let moveX=(keys.d?1:0)-(keys.a?1:0), moveZ=(keys.s?1:0)-(keys.w?1:0);
+  
+  if(moveX!==0||moveZ!==0){
+    let len=Math.hypot(moveX,moveZ); moveX/=len; moveZ/=len;
+    const dx=moveX*Math.cos(yaw)+moveZ*Math.sin(yaw), dz=-moveX*Math.sin(yaw)+moveZ*Math.cos(yaw);
+    const nextX=THREE.MathUtils.clamp(robot.position.x+dx*dt*6.5,-80,80);
+    const nextZ=THREE.MathUtils.clamp(robot.position.z+dz*dt*6.5,-80,80);
+    if(!collidesWithBuilding(nextX,robot.position.z)) robot.position.x=nextX;
+    if(!collidesWithBuilding(robot.position.x,nextZ)) robot.position.z=nextZ;
+    robot.rotation.y=Math.atan2(dx,dz); 
+    
+    walkTime += dt * 10;
+    bodyGroup.position.y = Math.abs(Math.sin(walkTime)) * .12;
+    
+    leftLeg.rotation.x = Math.sin(walkTime) * .6;
+    rightLeg.rotation.x = -Math.sin(walkTime) * .6;
+    leftArm.rotation.x = -Math.sin(walkTime) * .5;
+    rightArm.rotation.x = Math.sin(walkTime) * .5;
+  }else{ 
+    bodyGroup.position.y += (0 - bodyGroup.position.y) * dt * 5;
+    leftLeg.rotation.x += (0 - leftLeg.rotation.x) * dt * 8;
+    rightLeg.rotation.x += (0 - rightLeg.rotation.x) * dt * 8;
+    leftArm.rotation.x += (0 - leftArm.rotation.x) * dt * 8;
+    rightArm.rotation.x += (0 - rightArm.rotation.x) * dt * 8;
+  }
+  
+  checkProximity();
+  updateParticles(dt);
+
+  pizzaGroup.position.y=Math.sin(clock.elapsedTime*2.5)*.12;
+  if(marker.visible){ marker.position.y=Math.sin(clock.elapsedTime*2)*.1; marker.rotation.y+=dt*.8; }
+  
+  if(firstPerson){
+    const eye=new THREE.Vector3(robot.position.x+Math.sin(yaw)*.12,0.95,robot.position.z+Math.cos(yaw)*.12);
+    camera.position.lerp(eye,1-Math.pow(.00001,dt));
+    camera.lookAt(robot.position.x+Math.sin(yaw)*12,0.9,robot.position.z+Math.cos(yaw)*12);
+  }else{
+    let target=new THREE.Vector3(robot.position.x+Math.sin(yaw)*13,7.5+pitch*5,robot.position.z+Math.cos(yaw)*13);
+    camera.position.lerp(target,1-Math.pow(.001,dt));
+    camera.lookAt(robot.position.x,1.0,robot.position.z);
+  }
+  
+  const gameMinutes=Math.floor(clock.elapsedTime*2);
+  const hour=(8+Math.floor(gameMinutes/60))%24; const minute=gameMinutes%60;
+  $('gameTime').textContent=String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0');
+  
+  renderer.render(scene,camera);
+}
+
+animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>
